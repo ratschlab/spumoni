@@ -1216,6 +1216,53 @@ size_t classify_reads_ms(ms_t *ms, std::string ref_filename, std::string pattern
     return num_reads;
 }
 
+std::pair<bool, double> classify_read(void *ms, std::string &curr_read, size_t k, size_t w, bool use_promotions,
+    bool use_dna_letters, size_t bin_width, bool pml, size_t max_value_thr) {
+    if (use_promotions)
+        curr_read = perform_minimizer_digestion(curr_read, k, w);
+    else if (use_dna_letters)
+        curr_read = perform_dna_minimizer_digestion(curr_read, k, w);
+
+    if (curr_read.empty()){
+        //
+    }
+
+    // grab MS and write to output file
+    std::vector<size_t> lengths, pointers;
+    if (pml) {
+        static_cast<pml_t*>(ms)->matching_statistics(curr_read.c_str(), curr_read.size(), lengths);
+    } else {
+        static_cast<ms_t*>(ms)->matching_statistics(curr_read.c_str(), curr_read.size(), lengths, pointers);
+    }
+
+    std::vector<size_t> bins_max_value;
+    std::string status = "";
+    size_t sum_max_bin_values = 0.0;
+    size_t bins_above = 0, bins_below = 0;
+    size_t start_pos = 0, end_pos = 0;
+
+    while (start_pos < lengths.size()) {
+        end_pos = (start_pos + bin_width < lengths.size()) ? start_pos + bin_width : lengths.size();
+
+        // avoids small regions at the end of read
+        if (lengths.size() - end_pos < bin_width)
+            end_pos = lengths.size();
+
+        // grab maximum value in this region and update variables
+        auto max_val = *std::max_element(lengths.begin()+start_pos, lengths.begin()+end_pos);
+        if (max_val >= max_value_thr)
+            bins_above++;
+        else
+            bins_below++;
+        bins_max_value.push_back(max_val);
+        start_pos += (end_pos - start_pos);
+    }
+    std::for_each(bins_max_value.begin(), bins_max_value.end(), [&] (double n) {sum_max_bin_values += n;});
+    auto pres = bins_above/(bins_above+bins_below+0.0);
+    bool read_found = (pres > 0.50);
+    return {read_found, pres};
+}
+
 size_t classify_general_reads_ms(ms_t *ms, std::string ref_filename, std::string pattern_filename) {
     /* generates the MS for general-text reads against a general text reference */
 
@@ -1379,6 +1426,48 @@ int run_spumoni_ms_main(SpumoniRunOptions* run_opts) {
     FORCE_LOG("compute_ms", "finished processing %d reads. results are saved in *.lengths file.", num_reads);
     std::cout << std::endl;
     return 0;
+}
+
+std::pair<void*, size_t> setup_spumoni(SpumoniRunOptions* run_opts) {
+    void *ms;
+    std::string null_db_path;
+
+    // Print out digestion method for input reads
+    if (run_opts->use_promotions)
+        FORCE_LOG("setup_spumoni", "input reads will digested using promoted minimizer alphabet (k=%d, w=%d)",
+                  run_opts->k, run_opts->w);
+    else if (run_opts->use_dna_letters)
+        FORCE_LOG("setup_spumoni", "input reads will digested using DNA minimizer alphabet (k=%d, w=%d)",
+                  run_opts->k, run_opts->w);
+    else
+        FORCE_LOG("setup_spumoni", "input reads will be used directly, no minimizer digestion");
+
+    switch (run_opts->result_type) {
+    case MS:
+        // Loads the MS index containing the RLEBWT, Thresholds, and RA structure
+        null_db_path = run_opts->ref_file + ".msnulldb";
+        ms = new ms_t(run_opts->ref_file, run_opts->use_doc, true);
+        break;
+    case PML:
+        // Loads the RLEBWT and Thresholds
+        null_db_path = run_opts->ref_file + ".pmlnulldb";
+        ms = new pml_t (run_opts->ref_file, run_opts->use_doc, true);
+        break;
+    default: FATAL_WARNING("The output type (MS or PML) must be specified.");
+    }
+
+    EmpNullDatabase null_db;
+    std::ifstream in(null_db_path);
+    null_db.load(in);
+    in.close();
+
+    size_t max_value_thr = std::max(null_db.percentile_value, 3.0);
+    if (run_opts->use_dna_letters)
+        max_value_thr++;
+    else if (!run_opts->use_promotions)
+        max_value_thr += 4;
+
+    return {ms, max_value_thr};
 }
 
 std::pair<size_t, size_t> build_spumoni_ms_main(std::string ref_file, std::string output_prefix) {

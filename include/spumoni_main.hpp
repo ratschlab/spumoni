@@ -333,4 +333,8 @@ public:
 void parse_build_options(int argc, char** argv, SpumoniBuildOptions* opts);
 void parse_run_options(int argc, char** argv, SpumoniRunOptions* opts);
 
+std::pair<void*, size_t> setup_spumoni(SpumoniRunOptions* run_opts);
+std::pair<bool, double> classify_read(void *ms, std::string &curr_read, size_t k, size_t w, bool use_promotions,
+    bool use_dna_letters, size_t bin_width, bool pml, size_t max_value_thr);
+
 #endif /* End of SPUMONI_MAIN_H */

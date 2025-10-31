@@ -44,3 +44,5 @@ data/example_reads/all_reads.fa_*
 *.exe
 *.out
 *.app
+
+.idea

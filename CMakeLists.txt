@@ -57,6 +57,17 @@ endif()
 #set(CMAKE_EXE_LINKER_FLAGS "-static")
 
 #################################################################################
+# python bindings
+#################################################################################
+add_subdirectory(extern/pybind11)
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+message(STATUS "Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
+message(STATUS "Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+message(STATUS "Python3_LIBRARIES: ${Python3_LIBRARIES}")
+
+set(PYBIND11_FINDPYTHON ON)
+
+#################################################################################
 # Adding different sub-directories to the CMake build
 #################################################################################
 add_subdirectory(include)
@@ -75,3 +86,9 @@ install(TARGETS spumoni DESTINATION ${PROJECT_BINARY_DIR})
 install(TARGETS newscanNT.x pscan.x newscan.x pfp_thresholds64 pfp_thresholds 
                 compress_dictionary SlpEncBuild
         DESTINATION ${PROJECT_BINARY_DIR}/bin)
+
+
+
+install(TARGETS _core DESTINATION pyspumoni)
+
+

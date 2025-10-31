@@ -115,20 +115,25 @@ endif()
 #----------------------------------------
 # Add sdsl
 #----------------------------------------
+set(CMAKE_C_FLAGS_OLD "${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS_OLD "${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 FetchContent_Declare(
   sdsl
   # GIT_REPOSITORY https://github.com/elarielcl/sdsl-lite.git
   GIT_REPOSITORY https://github.com/simongog/sdsl-lite
 )
-
-FetchContent_GetProperties(sdsl)
+FetchContent_MakeAvailable(sdsl)
 if(NOT sdsl_POPULATED)
   FetchContent_Populate(sdsl)
 
   set(GENERATE_DOC OFF CACHE BOOL "Do not generate doxygen for sdsl-lite")
-  
   add_subdirectory(${sdsl_SOURCE_DIR} ${sdsl_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS_OLD}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_OLD}")
 
 #----------------------------------------
 # Add divsuffsort
