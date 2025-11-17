@@ -1,7 +1,7 @@
 from __future__ import annotations
 import typing
 
-__all__: list[str] = ['Alignment', 'Index']
+__all__ = ['Alignment', 'Index', 'Request', 'Response', 'ResponseGenerator']
 
 class Alignment:
     @typing.overload
@@ -26,7 +26,13 @@ class Alignment:
     def strand(self) -> int:
         ...
 class Index:
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, argv: list) -> None:
+        """
+        Load a spumoni index.
+        :param argv: commandline arguments
+        """
+        ...
+    def validate(self): -> None:
         ...
     def query(self, arg0: str) -> Alignment:
         ...

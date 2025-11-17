@@ -1429,6 +1429,11 @@ int run_spumoni_ms_main(SpumoniRunOptions* run_opts) {
 }
 
 std::pair<void*, size_t> setup_spumoni(SpumoniRunOptions* run_opts) {
+    printf("%s, %d\n", run_opts->ref_file.c_str(), run_opts->result_type);
+    /* This method is responsible for the MS computation */
+    using SelSd = SelectSdvec<>;
+    using DagcSd = DirectAccessibleGammaCode<SelSd>;
+
     void *ms;
     std::string null_db_path;
 
@@ -1456,6 +1461,7 @@ std::pair<void*, size_t> setup_spumoni(SpumoniRunOptions* run_opts) {
     default: FATAL_WARNING("The output type (MS or PML) must be specified.");
     }
 
+    printf("Null DB path: %s\n", null_db_path.c_str());
     EmpNullDatabase null_db;
     std::ifstream in(null_db_path);
     null_db.load(in);
