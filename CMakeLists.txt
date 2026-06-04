@@ -34,6 +34,7 @@ endif()
 # Configure thirdparty
 #################################################################################
 set(CMAKE_INSTALL_INCLUDEDIR "include") # This is an hack because include(GUIInstallDirs) doesn't work
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5) # CMake 4.x dropped support for cmake_minimum_required < 3.5
 add_subdirectory(thirdparty)
 
 #################################################################################

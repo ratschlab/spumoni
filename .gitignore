@@ -4,6 +4,7 @@
 # Build and Created Data Files
 build/
 build/*
+build_test/
 
 # helper binaries
 bin/

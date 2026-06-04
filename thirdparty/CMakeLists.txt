@@ -152,10 +152,12 @@ if(NOT divsufsort_POPULATED)
   set(BUILD_EXAMPLES OFF CACHE BOOL "Do not build libdivsufsort example")
   set(BUILD_DIVSUFSORT64 ON CACHE BOOL "Build libdivsufsort in 64-bits mode")
 
-  add_subdirectory(${divsufsort_SOURCE_DIR} ${divsufsort_BINARY_DIR} EXCLUDE_FROM_ALL)
-
-  target_include_directories(divsufsort PUBLIC "${divsufsort_BINARY_DIR}/include")
-  target_include_directories(divsufsort64 PUBLIC "${divsufsort_BINARY_DIR}/include")
+  # sdsl bundles its own libdivsufsort; only add subdirectory if targets don't already exist
+  if(NOT TARGET divsufsort)
+    add_subdirectory(${divsufsort_SOURCE_DIR} ${divsufsort_BINARY_DIR} EXCLUDE_FROM_ALL)
+    target_include_directories(divsufsort PUBLIC "${divsufsort_BINARY_DIR}/include")
+    target_include_directories(divsufsort64 PUBLIC "${divsufsort_BINARY_DIR}/include")
+  endif()
 endif()
 
 #----------------------------------------
@@ -205,12 +207,19 @@ if(NOT bigrepair_POPULATED)
   FetchContent_Populate(bigrepair)
   # add_subdirectory(${bigrepair_SOURCE_DIR} ${bigrepair_BINARY_DIR})
 
-  execute_process(COMMAND make CC=$ENV{CC} CXX=$ENV{CXX}
+  # Build only the targets spumoni needs; skip 'ctph' which fails to compile on
+  # Apple Clang (strerror_r returns int on BSD/macOS, not char*)
+  execute_process(COMMAND make CC=$ENV{CC} CXX=$ENV{CXX} procdic postproc
         RESULT_VARIABLE result
-        WORKING_DIRECTORY ${bigrepair_SOURCE_DIR} 
-        COMMAND_ECHO STDOUT)
+        WORKING_DIRECTORY ${bigrepair_SOURCE_DIR})
   if(result)
       message(FATAL_ERROR "CMake step for bigrepair failed: ${result}")
+  endif()
+  execute_process(COMMAND make CC=$ENV{CC} CXX=$ENV{CXX} -C largeb_repair
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${bigrepair_SOURCE_DIR})
+  if(result)
+      message(FATAL_ERROR "CMake step for bigrepair largeb_repair failed: ${result}")
   endif()
   
 endif()
