@@ -30,6 +30,23 @@ else()
     message(WARNING "git not found. Cloning of submodules will not work.")
 endif()
 
+# Apple Clang requires libomp from Homebrew for OpenMP support
+if(APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    find_program(_BREW brew)
+    if(_BREW)
+        execute_process(COMMAND ${_BREW} --prefix libomp
+            OUTPUT_VARIABLE LIBOMP_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+    endif()
+    if(LIBOMP_PREFIX)
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${LIBOMP_PREFIX}/include")
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${LIBOMP_PREFIX}/include")
+        set(OpenMP_C_LIB_NAMES "omp")
+        set(OpenMP_CXX_LIB_NAMES "omp")
+        set(OpenMP_omp_LIBRARY "${LIBOMP_PREFIX}/lib/libomp.dylib")
+    endif()
+endif()
+find_package(OpenMP REQUIRED)
+
 #################################################################################
 # Configure thirdparty
 #################################################################################

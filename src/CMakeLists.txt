@@ -27,16 +27,17 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 add_executable(spumoni spumoni.cpp  compute_ms_pml.cpp doc_array.cpp 
                         refbuilder.cpp emp_null_database.cpp 
                         ks_test.cpp batch_loader.cpp)
-target_link_libraries(spumoni PUBLIC sdsl common_h divsufsort divsufsort64 ri pthread zlib bonsai "-fopenmp")
+target_link_libraries(spumoni PUBLIC sdsl common_h divsufsort divsufsort64 ri pthread zlib bonsai OpenMP::OpenMP_CXX)
 target_include_directories(spumoni PUBLIC
                             "../include"
-                            "${shaped_slp_SOURCE_DIR}" "${FOLCA_SOURCE_DIR}" "${SUX_SOURCE_DIR}/function" 
-                            "${SUX_SOURCE_DIR}/support" 
+                            "$<$<BOOL:${SSE2NEON_STUB_DIR}>:${SSE2NEON_STUB_DIR}>"
+                            "${shaped_slp_SOURCE_DIR}" "${FOLCA_SOURCE_DIR}" "${SUX_SOURCE_DIR}/function"
+                            "${SUX_SOURCE_DIR}/support"
                             "${bonsai_SOURCE_DIR}/include/bonsai"
                             "${bonsai_SOURCE_DIR}"
                             "${bonsai_SOURCE_DIR}/hll/include/"
                             "${bonsai_SOURCE_DIR}/include")
-target_compile_options(spumoni PUBLIC "-std=c++17" "-fopenmp")
+target_compile_options(spumoni PUBLIC "-std=c++17")
 
 pybind11_add_module(_core
         pybindings.cpp
@@ -49,9 +50,10 @@ pybind11_add_module(_core
         batch_loader.cpp
 )
 
-target_link_libraries(_core PUBLIC sdsl common_h divsufsort divsufsort64 ri pthread zlib bonsai "-fopenmp" "-fPIC")
+target_link_libraries(_core PUBLIC sdsl common_h divsufsort divsufsort64 ri pthread zlib bonsai OpenMP::OpenMP_CXX "-fPIC")
 target_include_directories(_core PUBLIC
         "../include"
+        "$<$<BOOL:${SSE2NEON_STUB_DIR}>:${SSE2NEON_STUB_DIR}>"
         "../extern/parlaylib/include"
         "${shaped_slp_SOURCE_DIR}" "${FOLCA_SOURCE_DIR}" "${SUX_SOURCE_DIR}/function"
         "${SUX_SOURCE_DIR}/support"
@@ -59,7 +61,7 @@ target_include_directories(_core PUBLIC
         "${bonsai_SOURCE_DIR}"
         "${bonsai_SOURCE_DIR}/hll/include/"
         "${bonsai_SOURCE_DIR}/include")
-target_compile_options(_core PUBLIC "-std=c++17" "-fopenmp" "-fPIC")
+target_compile_options(_core PUBLIC "-std=c++17" "-fPIC")
 
 # ===============================================
 # Copy the built _core module into the Python package
