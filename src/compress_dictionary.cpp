@@ -19,6 +19,7 @@
 */
 
 #define VERBOSE
+#include <array>
 #include <iostream>
 #include <common.hpp>
 #include <spumoni_main.hpp>

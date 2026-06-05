@@ -401,7 +401,20 @@ FetchContent_GetProperties(pfp_thresholds)
 if(NOT pfp_thresholds_POPULATED)
   FetchContent_Populate(pfp_thresholds)
   add_subdirectory(${pfp_thresholds_SOURCE_DIR} ${pfp_thresholds_BINARY_DIR})
-  
+
+  # bwt2lcp (fetched transitively by pfp_thresholds) uses uint64_t without
+  # including <cstdint>.  Patch the header after pfp_thresholds has populated it;
+  # compilation happens during make so the file is read later.
+  FetchContent_GetProperties(bwt2lcp)
+  if(bwt2lcp_POPULATED)
+    set(_bwt2lcp_inc "${bwt2lcp_SOURCE_DIR}/internal/include.hpp")
+    file(READ "${_bwt2lcp_inc}" _bwt2lcp_content)
+    string(REPLACE
+      "#include <algorithm>"
+      "#include <cstdint>\n#include <algorithm>"
+      _bwt2lcp_content "${_bwt2lcp_content}")
+    file(WRITE "${_bwt2lcp_inc}" "${_bwt2lcp_content}")
+  endif()
 endif()
 
 #----------------------------------------
@@ -501,6 +514,15 @@ if(NOT shaped_slp_POPULATED)
     "static inline const array<uint8_t, MAX_LEAF_SIZE> bij_midstop = fill_bij_midstop();"
     _rc "${_rc}")
   file(WRITE "${_recsplit}" "${_rc}")
+
+  # sux/util/Vector.hpp uses std::exchange without including <utility>.
+  set(_vec "${shaped_slp_SOURCE_DIR}/external/sux/sux/util/Vector.hpp")
+  file(READ "${_vec}" _vec_content)
+  string(REPLACE
+    "#include <string>"
+    "#include <string>\n#include <utility>"
+    _vec_content "${_vec_content}")
+  file(WRITE "${_vec}" "${_vec_content}")
 
   add_subdirectory(${shaped_slp_SOURCE_DIR} ${shaped_slp_BINARY_DIR})
   set(FOLCA_SOURCE_DIR ${shaped_slp_SOURCE_DIR}/folca)
