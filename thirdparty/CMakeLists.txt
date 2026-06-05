@@ -129,8 +129,8 @@ if(NOT malloc_count_POPULATED)
   target_link_libraries(malloc_count dl)
   target_include_directories(malloc_count PUBLIC "${malloc_count_SOURCE_DIR}")
 
-  add_library(memprofile OBJECT ${malloc_count_SOURCE_DIR}/memprofile.h)
-  target_include_directories(memprofile PUBLIC "${malloc_count_SOURCE_DIR}")
+  add_library(memprofile INTERFACE)
+  target_include_directories(memprofile INTERFACE "${malloc_count_SOURCE_DIR}")
 endif()
 
 #----------------------------------------
@@ -400,6 +400,29 @@ FetchContent_Declare(
 FetchContent_GetProperties(pfp_thresholds)
 if(NOT pfp_thresholds_POPULATED)
   FetchContent_Populate(pfp_thresholds)
+
+  # pfp_thresholds defines `common` as an OBJECT library with only a header;
+  # CMake can't determine the linker language.  Patch it to INTERFACE before
+  # add_subdirectory processes it.
+  # Patch include/common/CMakeLists.txt: OBJECT library with only a header →
+  # INTERFACE, so CMake can determine the linker language.
+  set(_pfp_common "${pfp_thresholds_SOURCE_DIR}/include/common/CMakeLists.txt")
+  file(READ "${_pfp_common}" _pfp_common_content)
+  string(REPLACE
+    "add_library(common OBJECT \${COMMON_SOURCES})\ntarget_link_libraries(common)"
+    "add_library(common INTERFACE)\ntarget_include_directories(common INTERFACE \${CMAKE_CURRENT_SOURCE_DIR})"
+    _pfp_common_content "${_pfp_common_content}")
+  file(WRITE "${_pfp_common}" "${_pfp_common_content}")
+
+  # Patch include/CMakeLists.txt: PUBLIC is not valid on an INTERFACE target.
+  set(_pfp_inc "${pfp_thresholds_SOURCE_DIR}/include/CMakeLists.txt")
+  file(READ "${_pfp_inc}" _pfp_inc_content)
+  string(REPLACE
+    "target_include_directories(common PUBLIC common)"
+    "target_include_directories(common INTERFACE common)"
+    _pfp_inc_content "${_pfp_inc_content}")
+  file(WRITE "${_pfp_inc}" "${_pfp_inc_content}")
+
   add_subdirectory(${pfp_thresholds_SOURCE_DIR} ${pfp_thresholds_BINARY_DIR})
 
   # bwt2lcp (fetched transitively by pfp_thresholds) uses uint64_t without

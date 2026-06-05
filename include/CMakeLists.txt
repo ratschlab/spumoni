@@ -1,7 +1,5 @@
-set(COMMON_SOURCES common.hpp)
-
-add_library(common_h OBJECT ${COMMON_SOURCES})
-target_link_libraries(common_h)
+add_library(common_h INTERFACE)
+target_include_directories(common_h INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(MS_SOURCES  ms_rle_string.hpp  thresholds_ds.hpp 
                 spumoni_main.hpp compute_ms_pml.hpp
