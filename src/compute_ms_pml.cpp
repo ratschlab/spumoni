@@ -1276,6 +1276,23 @@ std::pair<bool, double> classify_read(void *ms, std::string &curr_read, size_t k
     return {read_found, pres};
 }
 
+std::pair<std::vector<size_t>, std::vector<size_t>> get_pml_docs(
+    void* ms, std::string& curr_read, size_t k, size_t w,
+    bool use_promotions, bool use_dna_letters, bool use_doc) {
+
+    if (use_promotions)
+        curr_read = perform_minimizer_digestion(curr_read, k, w);
+    else if (use_dna_letters)
+        curr_read = perform_dna_minimizer_digestion(curr_read, k, w);
+
+    std::vector<size_t> lengths, doc_nums;
+    if (use_doc)
+        static_cast<pml_t*>(ms)->matching_statistics(curr_read.c_str(), curr_read.size(), lengths, doc_nums);
+    else
+        static_cast<pml_t*>(ms)->matching_statistics(curr_read.c_str(), curr_read.size(), lengths);
+    return {lengths, doc_nums};
+}
+
 size_t classify_general_reads_ms(ms_t *ms, std::string ref_filename, std::string pattern_filename) {
     /* generates the MS for general-text reads against a general text reference */
 

@@ -336,5 +336,8 @@ void parse_run_options(int argc, char** argv, SpumoniRunOptions* opts);
 std::pair<void*, size_t> setup_spumoni(SpumoniRunOptions* run_opts);
 std::pair<bool, double> classify_read(void *ms, std::string &curr_read, size_t k, size_t w, bool use_promotions,
     bool use_dna_letters, size_t bin_width, bool pml, size_t max_value_thr);
+std::pair<std::vector<size_t>, std::vector<size_t>> get_pml_docs(
+    void* ms, std::string& curr_read, size_t k, size_t w,
+    bool use_promotions, bool use_dna_letters, bool use_doc);
 
 #endif /* End of SPUMONI_MAIN_H */

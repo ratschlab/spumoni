@@ -148,12 +148,47 @@ struct Index {
 
     vector<Alignment> query_batch(const py::list& sequences) {
         auto nr = sequences.size();
+        // Pre-extract C++ strings while the GIL is held; Parlay threads must
+        // never touch Python objects.
+        vector<string> strs;
+        strs.reserve(nr);
+        for (size_t i = 0; i < nr; i++)
+            strs.push_back(sequences[i].cast<string>());
+
         vector<Alignment> results(nr);
         parlay::for_each(parlay::iota(nr), [&](size_t i){
-            auto sequence = sequences[i].cast<string>();
-            results[i] = query(sequence);
+            auto seq = strs[i];  // per-thread copy; classify_read mutates it
+            results[i] = query(seq);
         });
         return results;
+    }
+
+    // Returns a list of (lengths, doc_nums) tuples — one per input sequence.
+    // Use the index loaded with '-d' for non-empty doc_nums.
+    vector<py::tuple> get_pml_batch(const py::list& sequences) {
+        auto nr = sequences.size();
+        // Pre-extract C++ strings while the GIL is held.
+        vector<string> strs;
+        strs.reserve(nr);
+        for (size_t i = 0; i < nr; i++)
+            strs.push_back(sequences[i].cast<string>());
+
+        vector<pair<vector<size_t>, vector<size_t>>> results(nr);
+        parlay::for_each(parlay::iota(nr), [&](size_t i) {
+            auto seq = strs[i];  // per-thread copy
+            auto [lengths, doc_nums] = get_pml_docs(ms, seq,
+                run_opts.k, run_opts.w,
+                run_opts.use_promotions, run_opts.use_dna_letters,
+                run_opts.use_doc);
+            results[i] = {std::move(lengths), std::move(doc_nums)};
+        });
+
+        // Convert to Python tuples with the GIL held (back in main thread).
+        vector<py::tuple> py_results;
+        py_results.reserve(nr);
+        for (auto& [lengths, docs] : results)
+            py_results.push_back(py::make_tuple(lengths, docs));
+        return py_results;
     }
 
     ResponseGenerator query_stream(const py::iterator& reads) {
@@ -193,6 +228,7 @@ PYBIND11_MODULE(_core, m) {
             .def("validate", &Index::validate)
             .def("query", &Index::query)
             .def("query_batch", &Index::query_batch)
+            .def("get_pml_batch", &Index::get_pml_batch)
             .def("query_stream", &Index::query_stream);
 
     py::class_<Request>(m, "Request")
